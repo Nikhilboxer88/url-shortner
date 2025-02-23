@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL SHORTENER</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <h1 class="htag">Free Link Shortener</h1>
+    <p class="htag">Simple and fast URL shortener!</p>
+    <br>
+    <div class="div1">
+        <form id="shorten-form" class="form1">
+            <p>Create Short URL from a long link for free</p>
+            
+            <label for="url-input">Paste the URL you want to shorten:</label>
+            <input type="text" id="url-input" name="redirectUrl" required class="link"> 
+
+            <p>Link Shortener is a free tool to shorten URLs and generate short links. It allows you to create a shortened link, making it easy to share.</p>
+            <button type="submit">Shorten Link</button>
+        </form>
+    </div>
+
+    <h2>Your Shortened Links</h2>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Short ID</th>
+                    <th>Original URL</th>
+                    <th>Click Count</th>
+                </tr>
+            </thead>
+            <tbody id="url-table-body">
+                <% urls.forEach(url => { %>
+                    <tr>
+                        <td><a href="/<%= url.shortId %>" target="_blank"><%= url.shortId %></a></td>
+                        <td><a href="<%= url.redirectUrl %>" target="_blank"><%= url.redirectUrl %></a></td>
+                        <td><%= url.visitHistory.length %></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+
+        <!-- Delete All Links Button -->
+        <form id="delete-form">
+            <button type="submit" class="delete-btn">Delete All Links</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById("shorten-form").addEventListener("submit", async function(event) {
+            event.preventDefault();  // Prevent default form submission
+            
+            const urlInput = document.getElementById("url-input").value;
+
+            if (!urlInput.trim()) {
+                alert("Please enter a valid URL");
+                return;
+            }
+
+            const response = await fetch("/url", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ redirectUrl: urlInput })
+            });
+
+            const result = await response.json();
+            
+            if (result.id) {
+                // Add new row to table
+                const tableBody = document.getElementById("url-table-body");
+                const newRow = document.createElement("tr");
+                newRow.innerHTML = `
+                    <td><a href="/${result.id}" target="_blank">${result.id}</a></td>
+                    <td><a href="${urlInput}" target="_blank">${urlInput}</a></td>
+                    <td>0</td>
+                `;
+                tableBody.prepend(newRow); // Add new row at the top
+                document.getElementById("url-input").value = ""; // Clear input field
+            } else {
+                alert("Error creating short link.");
+            }
+        });
+
+        document.getElementById("delete-form").addEventListener("submit", async function(event) {
+            event.preventDefault(); // Prevent default form submission
+            
+            const confirmation = confirm("Are you sure you want to delete all links?");
+            if (!confirmation) return;
+
+            const response = await fetch("/url/deleteAll", {
+                method: "POST",
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                document.getElementById("url-table-body").innerHTML = ""; // Clear table
+            } else {
+                alert("Error deleting links.");
+            }
+        });
+    </script>
+</body>
+</html>
